@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.runtime.LaunchedEffect
 import com.example.PokeApp.presentation.pokemon_list.PokemonViewModel
 import com.example.PokeApp.presentation.pokemon_list.PokemonViewModelFactory
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
+import com.example.PokeApp.presentation.pokemon_list.Screen
+
+
+
 
 
 
@@ -76,16 +83,33 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PokedexApp(viewModel: PokemonViewModel) {
     val navController = rememberNavController()
-    NavGraph(navController = navController, viewModel = viewModel)
+
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
+        }
+    ) { padding ->
+        NavGraph(
+            navController = navController,
+            viewModel = viewModel,
+            modifier = Modifier.padding(padding) // ważne!
+        )
+    }
 }
 
 
 
+
 @Composable
-fun NavGraph(navController: NavHostController, viewModel: PokemonViewModel) {
+fun NavGraph(
+    navController: NavHostController,
+    viewModel: PokemonViewModel,
+    modifier: Modifier = Modifier
+) {
     NavHost(
         navController = navController,
-        startDestination = "pokemon_list"
+        startDestination = "pokemon_list",
+        modifier = modifier
     ) {
         composable("pokemon_list") {
             PokemonListScreen(navController = navController, viewModel = viewModel)
@@ -96,6 +120,7 @@ fun NavGraph(navController: NavHostController, viewModel: PokemonViewModel) {
         }
     }
 }
+
 
 
 
@@ -168,6 +193,37 @@ fun PokemonListScreen(
                     }
                 }
             }
+        }
+    }
+}
+@Composable
+fun currentRoute(navController: NavHostController): String? {
+    val navBackStackEntry = navController.currentBackStackEntryAsState().value
+    return navBackStackEntry?.destination?.route
+}
+
+@Composable
+fun BottomNavigationBar(navController: NavHostController) {
+    val items: List<Screen> = listOf(
+        Screen.Pokedex,
+        Screen.Regions,
+        Screen.Favorites,
+        Screen.Profile
+    )
+    NavigationBar {
+        val currentRoute = currentRoute(navController)
+        items.forEach { screen ->
+            NavigationBarItem(
+                icon = { Icon(screen.icon, contentDescription = screen.title) },
+                label = { Text(screen.title) },
+                selected = currentRoute == screen.route,
+                onClick = {
+                    navController.navigate(screen.route) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
     }
 }
