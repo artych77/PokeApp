@@ -34,6 +34,8 @@ import com.example.PokeApp.presentation.pokemon_list.PokemonViewModelFactory
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import com.example.PokeApp.presentation.pokemon_list.Screen
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 
 
 
@@ -143,7 +145,8 @@ fun PokemonListScreen(
     navController: NavHostController,
     viewModel: PokemonViewModel
 ) {
-    val pokemonList by viewModel.pokemonList.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val filteredPokemonList by viewModel.filteredPokemonList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
@@ -156,6 +159,7 @@ fun PokemonListScreen(
                 CircularProgressIndicator()
             }
         }
+
         errorMessage != null -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -164,30 +168,44 @@ fun PokemonListScreen(
                 Text(text = errorMessage ?: "Wystąpił nieznany błąd")
             }
         }
+
         else -> {
-            LazyColumn {
-                items(pokemonList) { pokemon ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                            .clickable {
-                                navController.navigate("pokemon_detail/${pokemon.id}")
-                            },
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp)
+            Column {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChange(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    placeholder = { Text("Szukaj Pokémonów...") },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.Search, contentDescription = null)
+                    }
+                )
+
+                LazyColumn {
+                    items(filteredPokemonList) { pokemon ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .clickable {
+                                    navController.navigate("pokemon_detail/${pokemon.id}")
+                                },
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
-                            Column {
-                                Text(
-                                    text = pokemon.name,
-                                    style = MaterialTheme.typography.titleLarge
-                                )
-                                Text(
-                                    text = pokemon.types,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                            Row(modifier = Modifier.padding(16.dp)) {
+                                Column {
+                                    Text(
+                                        text = pokemon.name,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                    Text(
+                                        text = pokemon.types,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             }
                         }
                     }
@@ -196,6 +214,7 @@ fun PokemonListScreen(
         }
     }
 }
+
 @Composable
 fun currentRoute(navController: NavHostController): String? {
     val navBackStackEntry = navController.currentBackStackEntryAsState().value

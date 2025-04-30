@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+
 
 class PokemonViewModel(
     private val repository: PokemonRepository
@@ -24,6 +26,22 @@ class PokemonViewModel(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+
+    val filteredPokemonList: StateFlow<List<PokemonEntity>> =
+        searchQuery.combine(pokemonList) { query, list ->
+            if (query.isBlank()) {
+                list
+            } else {
+                list.filter { it.name.contains(query.trim(), ignoreCase = true) }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         loadPokemonList()
@@ -44,3 +62,4 @@ class PokemonViewModel(
         }
     }
 }
+
