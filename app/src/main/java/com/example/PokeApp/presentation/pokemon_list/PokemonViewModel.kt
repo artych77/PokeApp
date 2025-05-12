@@ -18,8 +18,9 @@ class PokemonViewModel(
     private val repository: PokemonRepository
 ) : ViewModel() {
 
-    private val _pokemonList = MutableStateFlow<List<PokemonEntity>>(emptyList())
-    val pokemonList: StateFlow<List<PokemonEntity>> = _pokemonList
+    val pokemonList: StateFlow<List<PokemonEntity>> =
+        repository.getAllPokemon
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -36,11 +37,8 @@ class PokemonViewModel(
 
     val filteredPokemonList: StateFlow<List<PokemonEntity>> =
         searchQuery.combine(pokemonList) { query, list ->
-            if (query.isBlank()) {
-                list
-            } else {
-                list.filter { it.name.contains(query.trim(), ignoreCase = true) }
-            }
+            if (query.isBlank()) list
+            else list.filter { it.name.contains(query.trim(), ignoreCase = true) }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -49,17 +47,7 @@ class PokemonViewModel(
 
     fun loadPokemonList() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-            try {
-                repository.fetchPokemonList()
-                _pokemonList.value = repository.getAllPokemon.first()
-            } catch (e: Exception) {
-                _errorMessage.value = "Błąd ładowania danych: ${e.localizedMessage ?: "Nieznany błąd"}"
-            } finally {
-                _isLoading.value = false
-            }
+            repository.fetchPokemonListIfNeeded()
         }
     }
 }
-

@@ -36,17 +36,8 @@ import androidx.compose.ui.Alignment
 import com.example.PokeApp.presentation.pokemon_list.Screen
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-
-
-
-
-
-
-
-
-
-
-
+import com.example.PokeApp.presentation.regions_list.RegionsViewModel
+import com.example.PokeApp.presentation.regions_list.RegionsViewModelFactory
 
 
 class MainActivity : ComponentActivity() {
@@ -57,7 +48,9 @@ class MainActivity : ComponentActivity() {
             val db = Room.databaseBuilder(
                 applicationContext,
                 AppDatabase::class.java, "pokemon-db"
-            ).build()
+            )
+                .fallbackToDestructiveMigration()
+                .build()
 
             val repository = PokemonRepository(
                 PokemonApiInstance.api,
@@ -75,7 +68,8 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
-                PokedexApp(viewModel)
+                PokedexApp(viewModel, repository)
+
             }
         }
     }
@@ -83,7 +77,7 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun PokedexApp(viewModel: PokemonViewModel) {
+fun PokedexApp(viewModel: PokemonViewModel, repository: PokemonRepository) {
     val navController = rememberNavController()
 
     Scaffold(
@@ -94,10 +88,12 @@ fun PokedexApp(viewModel: PokemonViewModel) {
         NavGraph(
             navController = navController,
             viewModel = viewModel,
-            modifier = Modifier.padding(padding) // ważne!
+            repository = repository,
+            modifier = Modifier.padding(padding)
         )
     }
 }
+
 
 
 
@@ -106,6 +102,7 @@ fun PokedexApp(viewModel: PokemonViewModel) {
 fun NavGraph(
     navController: NavHostController,
     viewModel: PokemonViewModel,
+    repository: PokemonRepository,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -116,12 +113,18 @@ fun NavGraph(
         composable("pokemon_list") {
             PokemonListScreen(navController = navController, viewModel = viewModel)
         }
+        composable(Screen.Regions.route) {
+            val regionsViewModel: RegionsViewModel = viewModel(factory = RegionsViewModelFactory(repository))
+            RegionsScreen(viewModel = regionsViewModel)
+        }
+
         composable("pokemon_detail/{pokemonId}") { backStackEntry ->
             val pokemonId = backStackEntry.arguments?.getString("pokemonId")
             PokemonDetailScreen(pokemonId)
         }
     }
 }
+
 
 
 
@@ -233,7 +236,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         val currentRoute = currentRoute(navController)
         items.forEach { screen ->
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = screen.title) },
+                icon = { screen.icon?.let { Icon(it, contentDescription = screen.title) } },
                 label = { Text(screen.title) },
                 selected = currentRoute == screen.route,
                 onClick = {
@@ -243,6 +246,27 @@ fun BottomNavigationBar(navController: NavHostController) {
                     }
                 }
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RegionsScreen(viewModel: RegionsViewModel = viewModel()) {
+    val regionList by viewModel.regions.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Regions") })
+        }
+    ) { padding ->
+        LazyColumn(modifier = Modifier.padding(padding)) {
+            items(regionList) { region ->
+                Text(
+                    text = region.name.replaceFirstChar { it.uppercase() },
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         }
     }
 }

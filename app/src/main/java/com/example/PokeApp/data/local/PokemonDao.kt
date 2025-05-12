@@ -16,4 +16,13 @@ interface PokemonDao {
 
     @Query("DELETE FROM pokemon_table")
     suspend fun clearPokemon()
+
+    @Query("SELECT COUNT(*) FROM pokemon_table")
+    suspend fun getCount(): Int
+
+    @Query("SELECT * FROM pokemon_table WHERE region = :regionName")
+    fun getByRegion(regionName: String): Flow<List<PokemonEntity>>
+
+
 }
+
