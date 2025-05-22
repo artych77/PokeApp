@@ -50,4 +50,14 @@ class PokemonViewModel(
             repository.fetchPokemonListIfNeeded()
         }
     }
+    val favoritePokemon: StateFlow<List<PokemonEntity>> =
+        repository.getFavoritePokemon()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun toggleFavorite(pokemon: PokemonEntity) {
+        viewModelScope.launch {
+            repository.toggleFavorite(pokemon)
+        }
+    }
+
 }

@@ -23,6 +23,12 @@ interface PokemonDao {
     @Query("SELECT * FROM pokemon_table WHERE region = :regionName")
     fun getByRegion(regionName: String): Flow<List<PokemonEntity>>
 
+    @Query("SELECT * FROM pokemon_table WHERE isFavorite = 1")
+    fun getFavoritePokemon(): Flow<List<PokemonEntity>>
+
+    @Query("UPDATE pokemon_table SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun updateFavorite(id: Int, isFavorite: Boolean)
+
 
 }
 

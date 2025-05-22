@@ -9,5 +9,6 @@ data class PokemonEntity(
     val name: String,
     val imageUrl: String,
     val types: String,
-    val region: String
+    val region: String,
+    val isFavorite: Boolean = false
 )

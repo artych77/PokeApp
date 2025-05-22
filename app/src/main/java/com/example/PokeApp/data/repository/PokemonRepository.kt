@@ -64,5 +64,11 @@ class PokemonRepository(
         return dao.getByRegion(regionName)
     }
 
+    fun getFavoritePokemon(): Flow<List<PokemonEntity>> = dao.getFavoritePokemon()
+
+    suspend fun toggleFavorite(pokemon: PokemonEntity) {
+        dao.updateFavorite(pokemon.id, !pokemon.isFavorite)
+    }
+
 
 }
