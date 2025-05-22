@@ -50,14 +50,30 @@ class PokemonViewModel(
             repository.fetchPokemonListIfNeeded()
         }
     }
-    val favoritePokemon: StateFlow<List<PokemonEntity>> =
-        repository.getFavoritePokemon()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun toggleFavorite(pokemon: PokemonEntity) {
         viewModelScope.launch {
             repository.toggleFavorite(pokemon)
         }
     }
+    private val _favoriteSearchQuery = MutableStateFlow("")
+    val favoriteSearchQuery: StateFlow<String> = _favoriteSearchQuery
+
+    fun onFavoriteSearchQueryChange(query: String) {
+        _favoriteSearchQuery.value = query
+    }
+
+    val favoritePokemon: StateFlow<List<PokemonEntity>> =
+        combine(
+            favoriteSearchQuery,
+            repository.getFavoritePokemon()
+        ) { query, list ->
+            if (query.isBlank()) {
+                list
+            } else {
+                list.filter { it.name.contains(query.trim(), ignoreCase = true) }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
 
 }

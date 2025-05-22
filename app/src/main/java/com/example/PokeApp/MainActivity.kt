@@ -291,7 +291,6 @@ fun PokemonCard(
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
 
-            // Ikona serduszka
             Icon(
                 imageVector = if (pokemon.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                 contentDescription = "Favorite",
@@ -316,7 +315,6 @@ fun PokemonCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // Lewa część (ID, nazwa, typy)
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -340,7 +338,6 @@ fun PokemonCard(
                     }
                 }
 
-                // Prawa część (obrazek z gradientem pod spodem)
                 Box(
                     modifier = Modifier
                         .size(72.dp)
@@ -397,15 +394,31 @@ fun FavoritesScreen(
     viewModel: PokemonViewModel,
     navController: NavHostController
 ) {
+    val searchQuery by viewModel.favoriteSearchQuery.collectAsState()
     val favoritePokemon by viewModel.favoritePokemon.collectAsState()
 
-    LazyColumn {
-        items(favoritePokemon) { pokemon ->
-            PokemonCard(
-                pokemon = pokemon,
-                navController = navController,
-                viewModel = viewModel
-            )
+    Column {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { viewModel.onFavoriteSearchQueryChange(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            placeholder = { Text("Szukaj w ulubionych...") },
+            singleLine = true,
+            leadingIcon = {
+                Icon(imageVector = Icons.Default.Search, contentDescription = null)
+            }
+        )
+
+        LazyColumn {
+            items(favoritePokemon) { pokemon ->
+                PokemonCard(
+                    pokemon = pokemon,
+                    navController = navController,
+                    viewModel = viewModel
+                )
+            }
         }
     }
 }
