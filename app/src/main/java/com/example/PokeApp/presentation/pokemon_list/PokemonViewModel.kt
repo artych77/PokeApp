@@ -18,6 +18,21 @@ class PokemonViewModel(
     private val repository: PokemonRepository
 ) : ViewModel() {
 
+    private val _selectedSort = MutableStateFlow("Smallest number")
+    val selectedSort: StateFlow<String> = _selectedSort
+
+    val sortOptions = listOf("Smallest number", "Largest number", "A–Z", "Z–A")
+
+    fun onSelectedSortChange(option: String) {
+        _selectedSort.value = option
+    }
+    private val _selectedType = MutableStateFlow("All types")
+    val selectedType: StateFlow<String> = _selectedType
+
+    fun onSelectedTypeChange(type: String) {
+        _selectedType.value = type
+    }
+
     val pokemonList: StateFlow<List<PokemonEntity>> =
         repository.getAllPokemon
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -36,9 +51,22 @@ class PokemonViewModel(
     }
 
     val filteredPokemonList: StateFlow<List<PokemonEntity>> =
-        searchQuery.combine(pokemonList) { query, list ->
-            if (query.isBlank()) list
-            else list.filter { it.name.contains(query.trim(), ignoreCase = true) }
+        combine(pokemonList, searchQuery, selectedType, selectedSort) { list, query, type, sort ->
+            list
+                .filter { pokemon ->
+                    val matchesQuery = pokemon.name.contains(query.trim(), ignoreCase = true)
+                    val matchesType = type == "All types" || pokemon.types.contains(type, ignoreCase = true)
+                    matchesQuery && matchesType
+                }
+                .let { filtered ->
+                    when (sort) {
+                        "A–Z" -> filtered.sortedBy { it.name }
+                        "Z–A" -> filtered.sortedByDescending { it.name }
+                        "Smallest number" -> filtered.sortedBy { it.id }
+                        "Largest number" -> filtered.sortedByDescending { it.id }
+                        else -> filtered
+                    }
+                }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -63,17 +91,32 @@ class PokemonViewModel(
         _favoriteSearchQuery.value = query
     }
 
-    val favoritePokemon: StateFlow<List<PokemonEntity>> =
-        combine(
-            favoriteSearchQuery,
-            repository.getFavoritePokemon()
-        ) { query, list ->
-            if (query.isBlank()) {
-                list
-            } else {
-                list.filter { it.name.contains(query.trim(), ignoreCase = true) }
-            }
+    val filteredFavorites: StateFlow<List<PokemonEntity>> =
+        combine(pokemonList, searchQuery, selectedType, selectedSort) { list, query, type, sort ->
+            list
+                .filter { it.isFavorite }
+                .filter { pokemon ->
+                    val matchesQuery = pokemon.name.contains(query.trim(), ignoreCase = true)
+                    val matchesType = type == "All types" || pokemon.types.contains(type, ignoreCase = true)
+                    matchesQuery && matchesType
+                }
+                .let { filtered ->
+                    when (sort) {
+                        "A–Z" -> filtered.sortedBy { it.name }
+                        "Z–A" -> filtered.sortedByDescending { it.name }
+                        "Smallest number" -> filtered.sortedBy { it.id }
+                        "Largest number" -> filtered.sortedByDescending { it.id }
+                        else -> filtered
+                    }
+                }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val pokemonTypes = listOf(
+        "All types", "Normal", "Fire", "Water", "Electric", "Grass", "Ice",
+        "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug",
+        "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"
+    )
+
 
 
 }
