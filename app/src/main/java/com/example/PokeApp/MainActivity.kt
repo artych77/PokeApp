@@ -151,8 +151,11 @@ fun NavGraph(
 
         composable("pokemon_detail/{pokemonId}") { backStackEntry ->
             val pokemonId = backStackEntry.arguments?.getString("pokemonId")
-            PokemonDetailScreen(pokemonId)
+            if (pokemonId != null) {
+                PokemonDetailScreen(pokemonId = pokemonId, viewModel = viewModel)
+            }
         }
+
         composable("favorites") {
             FavoritesScreen(viewModel = viewModel, navController = navController)
         }
@@ -168,15 +171,41 @@ fun NavGraph(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PokemonDetailScreen(pokemonId: String?) {
+fun PokemonDetailScreen(pokemonId: String?, viewModel: PokemonViewModel)
+ {
+    val detail by viewModel.pokemonDetail.collectAsState()
+
+    LaunchedEffect(pokemonId) {
+        pokemonId?.let { viewModel.loadPokemonDetail(it) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Szczegóły Pokémon") })
         }
     ) { padding ->
-        Text("Szczegóły dla Pokémon ID: $pokemonId", modifier = Modifier.padding(padding))
+        detail?.let { pokemon ->
+            Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+                Text("Name: ${pokemon.name.capitalize()}")
+                Text("ID: ${pokemon.id}")
+                Text("Height: ${pokemon.height}")
+                Text("Weight: ${pokemon.weight}")
+                Text("Types: ${pokemon.types.joinToString(", ") { it.type.name }}")
+                Spacer(Modifier.height(16.dp))
+                Text("Stats:")
+                pokemon.stats.forEach {
+                    Text("- ${it.stat.name.capitalize()}: ${it.base_stat}")
+                }
+            }
+        } ?: run {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
     }
 }
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -747,6 +776,13 @@ fun TypeDropdownItem(
     }
 }
 
+@Composable
+fun DetailItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.Start) {
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+    }
+}
 
 
 

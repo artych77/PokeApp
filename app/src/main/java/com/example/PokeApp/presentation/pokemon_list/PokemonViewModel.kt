@@ -3,6 +3,7 @@ package com.example.PokeApp.presentation.pokemon_list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.PokeApp.data.local.PokemonEntity
+import com.example.PokeApp.data.network.PokemonDetailResponse
 import com.example.PokeApp.data.repository.PokemonRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -116,6 +117,19 @@ class PokemonViewModel(
         "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug",
         "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"
     )
+
+    private val _pokemonDetail = MutableStateFlow<PokemonDetailResponse?>(null)
+    val pokemonDetail: StateFlow<PokemonDetailResponse?> = _pokemonDetail
+
+    fun loadPokemonDetail(id: String) {
+        viewModelScope.launch {
+            try {
+                _pokemonDetail.value = repository.getPokemonById(id.toInt())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
 
 
