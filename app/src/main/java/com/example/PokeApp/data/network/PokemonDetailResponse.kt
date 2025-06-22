@@ -9,7 +9,8 @@ data class PokemonDetailResponse(
     val weight: Int,
     val base_experience: Int,
     val abilities: List<AbilityWrapper>,
-    val stats: List<StatSlot>
+    val stats: List<StatSlot>,
+    val description: String
 )
 
 data class Sprites(

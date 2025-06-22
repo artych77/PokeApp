@@ -1,73 +1,72 @@
 package com.example.PokeApp.presentation.regions_list
 
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.*
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.TopAppBar
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.ui.unit.dp
-import androidx.room.Room
-import com.example.PokeApp.data.local.AppDatabase
-import com.example.PokeApp.data.repository.PokemonRepository
-import com.example.PokeApp.data.network.PokemonApiInstance
-import androidx.compose.foundation.clickable
-import androidx.compose.runtime.LaunchedEffect
-import com.example.PokeApp.presentation.pokemon_list.PokemonViewModel
-import com.example.PokeApp.presentation.pokemon_list.PokemonViewModelFactory
-import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
-import com.example.PokeApp.presentation.pokemon_list.Screen
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import com.example.PokeApp.presentation.regions_list.RegionsViewModel
-import com.example.PokeApp.presentation.regions_list.RegionsViewModelFactory
-import com.example.PokeApp.data.local.PokemonEntity
-import com.example.PokeApp.presentation.regions_list.RegionDetailViewModel
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import com.example.PokeApp.R
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegionDetailScreen(
-    regionName: String?,
-    viewModel: RegionDetailViewModel = viewModel()
-) {
-    val pokemon by viewModel.getPokemonByRegion(regionName ?: "")
-        .collectAsState(initial = emptyList())
+fun RegionDetailScreen(regionName: String, navController: NavHostController) {
+    val backgroundMap = mapOf(
+        "kanto" to R.drawable.bg_kanto,
+        "johto" to R.drawable.bg_johto,
+        "hoenn" to R.drawable.bg_hoenn,
+        "sinnoh" to R.drawable.bg_sinnoh,
+        "unova" to R.drawable.bg_unova,
+        "kalos" to R.drawable.bg_kalos,
+        "alola" to R.drawable.bg_alola,
+        "galar" to R.drawable.bg_galar
+    )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text(regionName ?: "Region") })
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(pokemon) { p: PokemonEntity ->
-                Text(
-                    text = p.name,
-                    modifier = Modifier.padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        }
+    val descriptionMap = mapOf(
+        "kanto" to "Kanto to pierwszy region w grach Pokémon. To tutaj zaczęła się przygoda z grami Red/Blue.",
+        "johto" to "Johto sąsiaduje z Kanto i zostało wprowadzone w grach Gold/Silver. Znane z Lugii i Ho-oh.",
+        "hoenn" to "Region Hoenn ma tropikalny klimat i był bohaterem gier Ruby/Sapphire.",
+        "sinnoh" to "Sinnoh, znane z gier Diamond/Pearl, ma górzysty teren i legendy o czasie i przestrzeni.",
+        "unova" to "Unova to nowoczesny region inspirowany Nowym Jorkiem. Zadebiutował w Black/White.",
+        "kalos" to "Kalos to region inspirowany Francją, znany z pięknej grafiki i Mega Ewolucji.",
+        "alola" to "Alola to wyspiarski region z gier Sun/Moon. Wprowadził formy regionalne.",
+        "galar" to "Galar to region inspirowany Wielką Brytanią. Zadebiutował w Pokémon Sword/Shield."
+    )
+
+    val imageRes = backgroundMap[regionName.lowercase()] ?: R.drawable.bg_kanto
+    val description = descriptionMap[regionName.lowercase()] ?: "Brak opisu dla tego regionu."
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = imageRes),
+            contentDescription = regionName,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = regionName.replaceFirstChar { it.uppercase() },
+            style = MaterialTheme.typography.headlineSmall
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }

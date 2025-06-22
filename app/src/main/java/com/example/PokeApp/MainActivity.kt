@@ -68,6 +68,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.PokeApp.presentation.profile.ProfileScreen
+import com.example.PokeApp.presentation.profile.ProfileViewModel
+import com.example.PokeApp.presentation.profile.ProfileViewModelFactory
+import com.example.PokeApp.presentation.regions_list.RegionDetailScreen
+import com.example.PokeApp.presentation.regions_list.RegionsScreen
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
 
 
 class MainActivity : ComponentActivity() {
@@ -88,7 +101,8 @@ class MainActivity : ComponentActivity() {
             )
 
             val viewModelFactory = PokemonViewModelFactory(repository)
-            val viewModel: PokemonViewModel = viewModel(factory = viewModelFactory)
+            val viewModel: PokemonViewModel = viewModel(factory = PokemonViewModelFactory(repository))
+
 
 
             LaunchedEffect(Unit) {
@@ -146,19 +160,35 @@ fun NavGraph(
         }
         composable(Screen.Regions.route) {
             val regionsViewModel: RegionsViewModel = viewModel(factory = RegionsViewModelFactory(repository))
-            RegionsScreen(viewModel = regionsViewModel)
+            RegionsScreen(viewModel = regionsViewModel, navController = navController, repository = repository)
         }
+
+        composable(route = "region_detail/{regionName}", arguments = listOf(navArgument("regionName") { type = NavType.StringType })) { backStackEntry ->
+            val regionName = backStackEntry.arguments?.getString("regionName") ?: ""
+            RegionDetailScreen(regionName = regionName, navController = navController)
+        }
+
+
 
         composable("pokemon_detail/{pokemonId}") { backStackEntry ->
             val pokemonId = backStackEntry.arguments?.getString("pokemonId")
-            if (pokemonId != null) {
-                PokemonDetailScreen(pokemonId = pokemonId, viewModel = viewModel)
-            }
+            PokemonDetailScreen(pokemonId = pokemonId, repository = repository)
         }
+
+
 
         composable("favorites") {
             FavoritesScreen(viewModel = viewModel, navController = navController)
         }
+
+        composable("profile") {
+            val context = LocalContext.current.applicationContext as Application
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = ProfileViewModelFactory(context)
+            )
+            ProfileScreen(viewModel = profileViewModel)
+        }
+
 
     }
 }
@@ -171,35 +201,136 @@ fun NavGraph(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PokemonDetailScreen(pokemonId: String?, viewModel: PokemonViewModel)
- {
+fun PokemonDetailScreen(pokemonId: String?, repository: PokemonRepository) {
+    val viewModel: PokemonViewModel = viewModel(factory = PokemonViewModelFactory(repository))
     val detail by viewModel.pokemonDetail.collectAsState()
+    val description by viewModel.description.collectAsState()
+    val evolutions by viewModel.evolutions.collectAsState()
 
     LaunchedEffect(pokemonId) {
         pokemonId?.let { viewModel.loadPokemonDetail(it) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Szczegóły Pokémon") })
-        }
-    ) { padding ->
-        detail?.let { pokemon ->
-            Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-                Text("Name: ${pokemon.name.capitalize()}")
-                Text("ID: ${pokemon.id}")
-                Text("Height: ${pokemon.height}")
-                Text("Weight: ${pokemon.weight}")
-                Text("Types: ${pokemon.types.joinToString(", ") { it.type.name }}")
-                Spacer(Modifier.height(16.dp))
-                Text("Stats:")
-                pokemon.stats.forEach {
-                    Text("- ${it.stat.name.capitalize()}: ${it.base_stat}")
+    detail?.let { pokemon ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Nagłówek z tłem i obrazkiem
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp)
+                    .background(getTypeColor(pokemon.types.first().type.name)),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .offset(y = 40.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 60.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "#${pokemon.id.toString().padStart(3, '0')} ${pokemon.name.replaceFirstChar { it.uppercase() }}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            pokemon.types.forEach {
+                                TypeChip(it.type.name)
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                        }
+                    }
                 }
+
+                AsyncImage(
+                    model = pokemon.sprites.front_default,
+                    contentDescription = pokemon.name,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .align(Alignment.TopCenter)
+                        .offset(y = 20.dp)
+                )
             }
-        } ?: run {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+
+            Spacer(modifier = Modifier.height(80.dp))
+
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                // Właściwości
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    DetailItem("Wzrost", "${pokemon.height / 10.0} m")
+                    DetailItem("Waga", "${pokemon.weight / 10.0} kg")
+                    DetailItem("Umiejętność", pokemon.abilities.firstOrNull()?.ability?.name ?: "-")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "Statystyki", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+
+                pokemon.stats.forEach {
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Text(text = it.stat.name.replaceFirstChar { c -> c.uppercase() })
+                        LinearProgressIndicator(
+                            progress = it.base_stat / 100f,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "${it.base_stat}",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.align(Alignment.End)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Opis",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = description.ifEmpty { "Brak opisu." },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Ewolucje",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = evolutions.ifEmpty { "Brak danych o ewolucji." },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -207,7 +338,11 @@ fun PokemonDetailScreen(pokemonId: String?, viewModel: PokemonViewModel)
 
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+
+
+
+
+    @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokemonListScreen(
     navController: NavHostController,
@@ -431,27 +566,6 @@ fun BottomNavigationBar(navController: NavHostController) {
                     }
                 }
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RegionsScreen(viewModel: RegionsViewModel = viewModel()) {
-    val regionList by viewModel.regions.collectAsState()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Regions") })
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(regionList) { region ->
-                Text(
-                    text = region.name.replaceFirstChar { it.uppercase() },
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
         }
     }
 }
@@ -778,11 +892,12 @@ fun TypeDropdownItem(
 
 @Composable
 fun DetailItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.Start) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
         Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
+
 
 
 

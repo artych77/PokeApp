@@ -2,9 +2,11 @@ package com.example.PokeApp.data.repository
 
 import com.example.PokeApp.data.local.PokemonDao
 import com.example.PokeApp.data.local.PokemonEntity
+import com.example.PokeApp.data.network.EvolutionChainResponse
 import com.example.PokeApp.data.network.PokemonApi
 import com.example.PokeApp.data.network.PokemonApiInstance
 import com.example.PokeApp.data.network.PokemonDetailResponse
+import com.example.PokeApp.data.network.PokemonSpeciesResponse
 import com.example.PokeApp.data.network.RegionResult
 import kotlinx.coroutines.flow.Flow
 
@@ -14,24 +16,6 @@ class PokemonRepository(
 ) {
     val getAllPokemon: Flow<List<PokemonEntity>> = dao.getAllPokemon()
 
-    /*suspend fun fetchPokemonList() {
-        try {
-            val response = api.getPokemonList()
-            val pokemonEntities = response.results.map { result ->
-                val detail = api.getPokemonDetail(result.name)
-                PokemonEntity(
-                    id = detail.id,
-                    name = detail.name.capitalize(),
-                    imageUrl = detail.sprites.front_default,
-                    types = detail.types.joinToString(",") { it.type.name }
-                )
-            }
-            dao.clearPokemon()
-            dao.insertAll(pokemonEntities)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }*/
     suspend fun fetchPokemonListIfNeeded() {
         val localCount = dao.getCount()
         if (localCount >= 50) {
@@ -52,10 +36,10 @@ class PokemonRepository(
                     height = detail.height.toFloat(),
                     weight = detail.weight.toFloat(),
                     ability = detail.abilities.firstOrNull()?.ability?.name ?: "",
-                    category = "", // <--- możesz uzupełnić z osobnego endpointu (species)
-                    description = "", // <--- możesz uzupełnić z osobnego endpointu (species)
-                    evolutions = "", // <--- osobna logika - można na razie zostawić pusty
-                    weaknesses = "", // <--- trzeba wyliczyć z typów lub pominąć
+                    category = "",
+                    description = "",
+                    evolutions = "",
+                    weaknesses = "",
                     region = regionName
                 )
             }
@@ -83,6 +67,16 @@ class PokemonRepository(
     suspend fun getPokemonById(id: Int): PokemonDetailResponse {
         return api.getPokemonDetail(id.toString())
     }
+
+    suspend fun getPokemonSpecies(id: Int): PokemonSpeciesResponse {
+        return api.getPokemonSpecies(id)
+    }
+
+
+    suspend fun getEvolutionChain(id: Int): EvolutionChainResponse {
+        return api.getEvolutionChain(id)
+    }
+
 
 
 }

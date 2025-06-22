@@ -14,4 +14,11 @@ interface PokemonApi {
     @GET("region")
     suspend fun getRegions(): RegionListResponse
 
+    @GET("pokemon-species/{id}")
+    suspend fun getPokemonSpecies(@Path("id") id: Int): PokemonSpeciesResponse
+
+    @GET("evolution-chain/{id}")
+    suspend fun getEvolutionChain(@Path("id") id: Int): EvolutionChainResponse
+
+
 }
