@@ -82,12 +82,16 @@ Projekt zawiera testy instrumentacyjne w `androidTest`. Można je uruchomić z p
 
 ## 📸 Screeny
 
-### Ekran główny
-![Lista Pokémonów](screens/Screenshot_20250622_215600.png)
-
-### Szczegóły Pokémona
-![Szczegóły](screens/Screenshot_20250622_215657.png)
-
+<table>
+  <tr>
+    <td><img src="screens/Screenshot_20250622_215600.png" alt="Lista Pokémonów" width="300"/></td>
+    <td><img src="screens/Screenshot_20250622_215657.png" alt="Szczegóły Pokémona" width="300"/></td>
+  </tr>
+  <tr>
+    <td style="text-align:center">Lista Pokémonów</td>
+    <td style="text-align:center">Szczegóły Pokémona</td>
+  </tr>
+</table>
 
 ---
 
