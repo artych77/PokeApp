@@ -11,7 +11,6 @@
 - **Room** – lokalna baza danych SQLite z dostępem poprzez DAO.
 - **Kotlin Coroutines** – obsługa operacji asynchronicznych.
 - **ViewModel & LiveData** – do zarządzania stanem UI i logiką prezentacji.
-- **Jetpack Navigation (opcjonalnie)** – jeśli występuje, do obsługi przejść między ekranami.
 - **Gradle Kotlin DSL** – konfiguracja projektu.
 
 ---
